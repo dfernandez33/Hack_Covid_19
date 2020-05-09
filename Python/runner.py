@@ -16,7 +16,7 @@ db = firestore.client()
 # use this function to write the result of the test to the db
 # result input should be a boolean value
 def write_test_result_to_db(result):
-    current_test = test_stand_data["tests"][-1]
+    current_test = test_stand_data["tests"][-1] # most recent test will always be at the end of the array
     try:
         test_ref = db.collection("tests").document(current_test)
         test_ref.update({
