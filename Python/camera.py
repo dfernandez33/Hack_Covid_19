@@ -23,7 +23,9 @@ ser.write(b'D')
 # classifier.fit(x_train, y_train)
 # ------------------------------------------------------------------------------------
 
+
 cam = cv2.VideoCapture(1)
+
 cv2.namedWindow("test")
 img_counter = 0
 # print(my_path)

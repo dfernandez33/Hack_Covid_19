@@ -8,7 +8,12 @@ admin.initializeApp({
 const db = admin.firestore();
 
 import testRegistration = require("./testRegistration");
+import updateResults = require("./updateResults")
 
 exports.testRegistration = functions.https.onCall((data, context) => {
     return testRegistration.handler(data, context, db);
+});
+
+exports.updateResults = functions.firestore.document("tests/{testId}").onUpdate((data, context) => {
+    return updateResults.handler(data, context, db);
 });
