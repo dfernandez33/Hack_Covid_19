@@ -77,7 +77,7 @@ export const handler = async function(data:TestFormData, context:functions.https
 
     try { // send email to organization contact
         await sgMail.send(mssg);
-        const message = 'Request sent';
+        const message = 'Email sent';
         return{
             status: 200,
             message: message
