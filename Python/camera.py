@@ -29,7 +29,7 @@ cv2.namedWindow("test")
 img_counter = 0
 # print(my_path)
 # prediction = classifier.predict(np.array([cv2.imread("negative/opencv_frame_{}.png".format(i)).flatten()]))
-
+queue = []
 while True:
     ret, frame = cam.read()
     if not ret:

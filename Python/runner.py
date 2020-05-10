@@ -9,6 +9,7 @@ import cv2
 import os
 import serial
 import pyzbar.pyzbar as pyzbar
+import time
 
 
 # Initialize firebase app
@@ -58,17 +59,19 @@ def write_test_result_to_db(result):
             "result": result
         })
         return 1
-    except:
+    except Exception as e:
+        print(e)
         return 0
 
 def update_machine_availability(test_id):
     try:
-        test_stand_ref = db.collection("test-stands").document(hard_coded_stand_id)
-        test_ref.update({
+        test_stand_ref = db.collection("test-stands").document(test_id)
+        test_stand_ref.update({
             "inUse": False
         })
         return 1
-    except:
+    except Exception as e:
+        print(e)
         return 0
 
 def clear_leds():
@@ -90,12 +93,8 @@ try:
         cam = cv2.VideoCapture(1)
         cv2.namedWindow("test")
         while True:
-            ret, frame = cam.read()
-            if not ret:
-                print("failed to grab frame")
-                break
-            cv2.imshow("test", frame)
 
+            sliding_window = [0,0,1]
             k = cv2.waitKey(1)
 
             if k%256 == 27:
@@ -105,29 +104,61 @@ try:
             elif k%256 == 114:
                 # R pressed. This resets LEDs
                 clear_leds()
-            elif k%256 == 32:
+            # elif k%256 == 32:
                 # SPACE pressed
-                clear_leds()
+            clear_leds()
+            while sum(sliding_window) != -3 and sum(sliding_window) != 0 and sum(sliding_window) != 3:
+                ret, frame = cam.read()
+                if not ret:
+                    print("failed to grab frame")
+                    break
+                cv2.imshow("test", frame)
                 cropped = frame[100:360, 120:520]
                 edges = cv2.Canny(cropped,100,200)
-
-                if edges.sum() < 190000:
-                    print("CONGRATULATIONS! You're COVID-19 NEGATIVE")
-                    ser.write(b'C')
-                    write_test_result_to_db("NEGATIVE")
+                print(edges.sum())
+                if edges.sum() < 10000:
+                    sliding_window.append(0)
+                    sliding_window.pop(0)
+                    #clear_leds()
+                elif edges.sum() < 170000:
+                    sliding_window.append(-1)
+                    sliding_window.pop(0)
+                    # print("CONGRATULATIONS! You're COVID-19 NEGATIVE")
+                    # ser.write(b'C')
+                    # write_test_result_to_db(False)
+                    # time.sleep(4)
+                    # break
                 else:
-                    print("We're sorry. You tested POSITIVE :(")
-                    ser.write(b'A')
-                    write_test_result_to_db("POSITIVE")
+                    sliding_window.append(1)
+                    sliding_window.pop(0)
+                    # print("We're sorry. You tested POSITIVE :(")
+                    # ser.write(b'A')
+                    # write_test_result_to_db(True)
+                    # time.sleep(4)
+                    # break
+            if sliding_window[0] == -1:
+                print("CONGRATULATIONS! You're COVID-19 NEGATIVE")
+                ser.write(b'C')
+                write_test_result_to_db(False)
+                break
+            elif sliding_window[0] == 1:
+                print("We're sorry. You tested POSITIVE :(")
+                ser.write(b'A')
+                write_test_result_to_db(True)
+                break
+            else:
+                clear_leds()
 
         cam.release()
         cv2.destroyAllWindows()
-        update_machine_availability()
+        print(update_machine_availability(hard_coded_stand_id))
+        clear_leds()
 
         # -----------------------------------------------------------------------
     else:
         print("QR Code does not correspond to this testing stand. Please try again or verify that you are using the"
               "correct stand.")
         exit()
-except:
+except Exception as e:
+    print(e)
     print("No such document")
