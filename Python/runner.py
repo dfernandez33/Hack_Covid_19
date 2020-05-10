@@ -51,28 +51,19 @@ cv2.destroyAllWindows()
 
 # use this function to write the result of the test to the db
 # result input should be a boolean value
-def write_test_result_to_db(result):
-    current_test = test_stand_data["tests"][-1] # most recent test will always be at the end of the array
+def write_test_result_to_db(result, test_stand_ref):
+    current_test = test_stand_data["tests"][-1]  # most recent test will always be at the end of the array
     try:
         test_ref = db.collection("tests").document(current_test)
         test_ref.update({
-            "result": result
+            "result": result,
         })
         return 1
     except Exception as e:
         print(e)
         return 0
 
-def update_machine_availability(test_id):
-    try:
-        test_stand_ref = db.collection("test-stands").document(test_id)
-        test_stand_ref.update({
-            "inUse": False
-        })
-        return 1
-    except Exception as e:
-        print(e)
-        return 0
+
 
 def clear_leds():
     ser.write(b'B')
@@ -151,9 +142,6 @@ try:
 
         cam.release()
         cv2.destroyAllWindows()
-        print(update_machine_availability(hard_coded_stand_id))
-        clear_leds()
-
         # -----------------------------------------------------------------------
     else:
         print("QR Code does not correspond to this testing stand. Please try again or verify that you are using the"
