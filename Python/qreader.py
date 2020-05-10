@@ -1,14 +1,11 @@
 import cv2
-import numpy as np 
+import numpy as np
 import pyzbar.pyzbar as pyzbar
 
 cam = cv2.VideoCapture(0)
-
 cv2.namedWindow("Scanner")
-
 img_counter = 0
 qrcodes = []
-
 while True:
     ret, frame = cam.read()
     decodedObjects = pyzbar.decode(frame)
@@ -32,12 +29,6 @@ while True:
     	qrcodes.append(obj.data)
     if qrcodes != []:
     	break
-
 print(qrcodes)
-
 cam.release()
-
 cv2.destroyAllWindows()
-
-
-

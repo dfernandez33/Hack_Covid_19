@@ -8,6 +8,8 @@ from sklearn import svm
 import cv2
 import os
 import serial
+import pyzbar.pyzbar as pyzbar
+
 
 # Initialize firebase app
 cred = credentials.Certificate("hack-covid-19-e4018-firebase-adminsdk-pt6vv-e257520af7.json")
@@ -15,9 +17,36 @@ app = firebase_admin.initialize_app(cred)
 # get reference to firestore
 db = firestore.client()
 
-###############################
-# TODO: implement qr code reader using camera
-###############################
+cam = cv2.VideoCapture(0)
+cv2.namedWindow("Scanner")
+img_counter = 0
+qrcodes = []
+while True:
+    ret, frame = cam.read()
+    decodedObjects = pyzbar.decode(frame)
+
+    if not ret:
+        print("failed to grab frame")
+        break
+    cv2.imshow("Scanner", frame)
+    k = cv2.waitKey(1)
+    if k%256 == 27:
+        # ESC pressed
+        print("Escape hit, closing...")
+        break
+    elif k%256 == 32:
+        # SPACE pressed
+        img_name = "opencv_frame_{}.png".format(img_counter)
+        cv2.imwrite(img_name, frame)
+        print("{} written!".format(img_name))
+        img_counter += 1
+    for obj in decodedObjects:
+    	qrcodes.append(obj.data)
+    if qrcodes != []:
+    	break
+print(qrcodes)
+cam.release()
+cv2.destroyAllWindows()
 
 # use this function to write the result of the test to the db
 # result input should be a boolean value
@@ -31,12 +60,24 @@ def write_test_result_to_db(result):
         return 1
     except:
         return 0
+
+def update_machine_availability(test_id):
+    try:
+        test_stand_ref = db.collection("test-stands").document(hard_coded_stand_id)
+        test_ref.update({
+            "inUse": False
+        })
+        return 1
+    except:
+        return 0
+
 def clear_leds():
     ser.write(b'B')
     ser.write(b'D')
 
 hard_coded_stand_id = "HrPMcrft5L0k4nH6MZNC"
-qrcode_data = "7dd85cd4-86c1-4801-9882-2b795baef2d8" # unlock code obtained from scanning qrcode
+qrcode_data = qrcodes[0].decode("utf-8")  # unlock code obtained from scanning qrcode
+print(qrcodes[0])
 try:
     test_stand_ref = db.collection("test-stands").document(hard_coded_stand_id)
     test_stand_data = test_stand_ref.get().to_dict()
@@ -81,6 +122,8 @@ try:
 
         cam.release()
         cv2.destroyAllWindows()
+        update_machine_availability()
+
         # -----------------------------------------------------------------------
     else:
         print("QR Code does not correspond to this testing stand. Please try again or verify that you are using the"
