@@ -58,6 +58,9 @@ def write_test_result_to_db(result, test_stand_ref):
         test_ref.update({
             "result": result,
         })
+        test_stand_ref.update({
+            "inUse": False
+        })
         return 1
     except Exception as e:
         print(e)
@@ -85,7 +88,7 @@ try:
         cv2.namedWindow("test")
         while True:
 
-            sliding_window = [0,0,1]
+            sliding_window = [0,0,0,0,0,0,1]
             k = cv2.waitKey(1)
 
             if k%256 == 27:
@@ -98,7 +101,7 @@ try:
             # elif k%256 == 32:
                 # SPACE pressed
             clear_leds()
-            while sum(sliding_window) != -3 and sum(sliding_window) != 0 and sum(sliding_window) != 3:
+            while sum(sliding_window) != -7 and sum(sliding_window) != 0 and sum(sliding_window) != 7:
                 ret, frame = cam.read()
                 if not ret:
                     print("failed to grab frame")
@@ -106,7 +109,7 @@ try:
                 cv2.imshow("test", frame)
                 cropped = frame[100:360, 120:520]
                 edges = cv2.Canny(cropped,100,200)
-                print(edges.sum())
+                # print(edges.sum())
                 if edges.sum() < 10000:
                     sliding_window.append(0)
                     sliding_window.pop(0)
@@ -130,16 +133,17 @@ try:
             if sliding_window[0] == -1:
                 print("CONGRATULATIONS! You're COVID-19 NEGATIVE")
                 ser.write(b'C')
-                write_test_result_to_db(False)
+                write_test_result_to_db(False, test_stand_ref)
                 break
             elif sliding_window[0] == 1:
                 print("We're sorry. You tested POSITIVE :(")
                 ser.write(b'A')
-                write_test_result_to_db(True)
+                write_test_result_to_db(True, test_stand_ref)
                 break
             else:
                 clear_leds()
 
+        clear_leds()
         cam.release()
         cv2.destroyAllWindows()
         # -----------------------------------------------------------------------
